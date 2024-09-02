@@ -2,34 +2,8 @@ import pytest
 from graphene_django.utils.testing import graphql_query
 from moxie_medspa.models import Medspa, Service, Appointment
 from django.utils import timezone
+from moxie_medspa.tests.test_helpers import create_medspa, create_service, create_appointment, execute_graphql_query
 
-def create_medspa():
-    return Medspa.objects.create(
-        name="Test Medspa",
-        address="123 Test St",
-        phone_number="555-1234",
-        email_address="test@joinmoxie.com"
-    )
-
-def create_service(medspa, name="Test Service", description="Test Service Description", price=100.0, duration=60):
-    return Service.objects.create(
-        name=name,
-        description=description,
-        price=price,
-        duration=duration,
-        medspa=medspa
-    )
-
-def create_appointment(medspa, services, start_time=None, status='scheduled'):
-    appointment = Appointment.objects.create(
-        start_time=start_time or timezone.now(),
-        total_duration=sum(service.duration for service in services),
-        total_price=sum(service.price for service in services),
-        status=status,
-        medspa=medspa
-    )
-    appointment.services.set(services)
-    return appointment
 
 @pytest.mark.django_db
 def test_create_service_mutation(client):

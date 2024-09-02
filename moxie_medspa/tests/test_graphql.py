@@ -2,17 +2,14 @@ import pytest
 from graphene_django.utils.testing import graphql_query
 from moxie_medspa.models import Medspa, Service, Appointment
 from django.utils import timezone
+from moxie_medspa.tests.test_helpers import create_medspa, create_service, create_appointment, execute_graphql_query
 
 @pytest.mark.django_db
 def test_query_all_medspas(client):
-    test_medspa = Medspa.objects.create(
-        name="Test Medspa",
-        address="123 Test St",
-        phone_number="555-1234",
-        email_address="test@joinmoxie.com"
-    )
+    test_medspa = create_medspa()
 
-    response = graphql_query(
+    content = execute_graphql_query(
+        client,
         '''
         query {
             allMedspas {
@@ -21,32 +18,22 @@ def test_query_all_medspas(client):
                 address
             }
         }
-        ''',
-        client=client,
-        graphql_url="/graphql/"
+        '''
     )
 
-    content = response.json()
     data = content['data']['allMedspas']
-
     assert len(data) == Medspa.objects.count()
-
     assert data[-1]['name'] == test_medspa.name
     assert data[-1]['address'] == test_medspa.address
     assert data[-1]['id'] == str(test_medspa.id)
 
 @pytest.mark.django_db
 def test_query_service_by_medspa(client):
-    medspa = Medspa.objects.create(name="Test Medspa", address="123 Test St", phone_number="555-1234", email_address="test@joinmoxie.com")
-    service = Service.objects.create(
-        name="Test Service",
-        description="A test service",
-        price=100.0,
-        duration=60,
-        medspa=medspa
-    )
+    medspa = create_medspa()
+    service = create_service(medspa)
 
-    response = graphql_query(
+    content = execute_graphql_query(
+        client,
         '''
         query($medspaId: UUID!) {
             allServices(medspaId: $medspaId) {
@@ -57,32 +44,21 @@ def test_query_service_by_medspa(client):
             }
         }
         ''',
-        client=client,
-        graphql_url="/graphql/",
         variables={'medspaId': str(medspa.id)}
     )
 
-    content = response.json()
     data = content['data']['allServices']
-
     assert len(data) == 1
-
     assert data[0]['name'] == service.name
     assert data[0]['description'] == service.description
     assert data[0]['id'] == str(service.id)
 
-
-
 @pytest.mark.django_db
 def test_query_specific_medspa(client):
-    test_medspa = Medspa.objects.create(
-        name="Specific Medspa",
-        address="456 Test Rd",
-        phone_number="555-5678",
-        email_address="specific@joinmoxie.com"
-    )
+    test_medspa = create_medspa(name="Specific Medspa", address="456 Test Rd", phone_number="555-5678", email_address="specific@joinmoxie.com")
 
-    response = graphql_query(
+    content = execute_graphql_query(
+        client,
         '''
         query getMedspa($id: UUID!) {
             medspa(id: $id) {
@@ -94,14 +70,10 @@ def test_query_specific_medspa(client):
             }
         }
         ''',
-        client=client,
-        graphql_url="/graphql/",
         variables={'id': str(test_medspa.id)}
     )
 
-    content = response.json()
     data = content['data']['medspa']
-
     assert data['name'] == test_medspa.name
     assert data['address'] == test_medspa.address
     assert data['phoneNumber'] == test_medspa.phone_number
@@ -110,21 +82,11 @@ def test_query_specific_medspa(client):
 
 @pytest.mark.django_db
 def test_query_specific_service(client):
-    medspa = Medspa.objects.create(
-        name="Medspa for Service",
-        address="789 Service St",
-        phone_number="555-7890",
-        email_address="service@joinmoxie.com"
-    )
-    test_service = Service.objects.create(
-        name="Specific Service",
-        description="A specific service description",
-        price=300.0,
-        duration=60,
-        medspa=medspa
-    )
+    medspa = create_medspa(name="Medspa for Service", address="789 Service St", phone_number="555-7890", email_address="service@joinmoxie.com")
+    test_service = create_service(medspa, name="Specific Service", description="A specific service description", price=300.0, duration=60)
 
-    response = graphql_query(
+    content = execute_graphql_query(
+        client,
         '''
         query getService($id: UUID!) {
             service(id: $id) {
@@ -140,14 +102,10 @@ def test_query_specific_service(client):
             }
         }
         ''',
-        client=client,
-        graphql_url="/graphql/",
         variables={'id': str(test_service.id)}
     )
 
-    content = response.json()
     data = content['data']['service']
-
     assert data['name'] == test_service.name
     assert data['description'] == test_service.description
     assert float(data['price']) == test_service.price
@@ -157,29 +115,12 @@ def test_query_specific_service(client):
 
 @pytest.mark.django_db
 def test_query_specific_appointment(client):
-    medspa = Medspa.objects.create(
-        name="Medspa for Appointment",
-        address="123 Appointment St",
-        phone_number="555-1010",
-        email_address="appointment@joinmoxie.com"
-    )
-    service = Service.objects.create(
-        name="Appointment Service",
-        description="A service for appointments",
-        price=150.0,
-        duration=30,
-        medspa=medspa
-    )
-    test_appointment = Appointment.objects.create(
-        start_time=timezone.now(),
-        total_duration=service.duration,
-        total_price=service.price,
-        status='SCHEDULED',
-        medspa=medspa
-    )
-    test_appointment.services.add(service)
+    medspa = create_medspa(name="Medspa for Appointment", address="123 Appointment St", phone_number="555-1010", email_address="appointment@joinmoxie.com")
+    service = create_service(medspa, name="Appointment Service", description="A service for appointments", price=150.0, duration=30)
+    test_appointment = create_appointment(medspa, [service])
 
-    response = graphql_query(
+    content = execute_graphql_query(
+        client,
         '''
         query getAppointment($id: UUID!) {
             appointment(id: $id) {
@@ -199,16 +140,12 @@ def test_query_specific_appointment(client):
             }
         }
         ''',
-        client=client,
-        graphql_url="/graphql/",
         variables={'id': str(test_appointment.id)}
     )
 
-    content = response.json()
     data = content['data']['appointment']
-
     assert data['id'] == str(test_appointment.id)
-    assert data['status'] == test_appointment.status
+    assert data['status'] == test_appointment.status.upper()
     assert float(data['totalPrice']) == test_appointment.total_price
     assert data['totalDuration'] == test_appointment.total_duration
     assert data['medspa']['id'] == str(medspa.id)
@@ -219,46 +156,15 @@ def test_query_specific_appointment(client):
 
 @pytest.mark.django_db
 def test_query_appointments_by_medspa(client):
-    medspa = Medspa.objects.create(
-        name="Medspa for Appointments",
-        address="123 Appointments St",
-        phone_number="555-1212",
-        email_address="appointments@joinmoxie.com"
-    )
-    service1 = Service.objects.create(
-        name="Service A",
-        description="Service A Description",
-        price=100.0,
-        duration=30,
-        medspa=medspa
-    )
-    service2 = Service.objects.create(
-        name="Service B",
-        description="Service B Description",
-        price=150.0,
-        duration=45,
-        medspa=medspa
-    )
+    medspa = create_medspa(name="Medspa for Appointments", address="123 Appointments St", phone_number="555-1212", email_address="appointments@joinmoxie.com")
+    service1 = create_service(medspa, name="Service A", price=100.0, duration=30)
+    service2 = create_service(medspa, name="Service B", price=150.0, duration=45)
 
-    appointment1 = Appointment.objects.create(
-        start_time=timezone.now(),
-        total_duration=service1.duration,
-        total_price=service1.price,
-        status='scheduled',
-        medspa=medspa
-    )
-    appointment1.services.add(service1)
+    create_appointment(medspa, [service1])
+    create_appointment(medspa, [service2], start_time=timezone.now() - timezone.timedelta(days=1), status='completed')
 
-    appointment2 = Appointment.objects.create(
-        start_time=timezone.now() - timezone.timedelta(days=1),
-        total_duration=service2.duration,
-        total_price=service2.price,
-        status='completed',
-        medspa=medspa
-    )
-    appointment2.services.add(service2)
-
-    response = graphql_query(
+    content = execute_graphql_query(
+        client,
         '''
         query getAppointmentsByMedspa($medspaId: UUID!) {
             appointmentsByMedspa(medspaId: $medspaId) {
@@ -272,20 +178,16 @@ def test_query_appointments_by_medspa(client):
             }
         }
         ''',
-        client=client,
-        graphql_url="/graphql/",
         variables={'medspaId': str(medspa.id)}
     )
 
-    content = response.json()
-    print(content)
     data = content['data']['appointmentsByMedspa']
-
     assert len(data) == 2
     assert data[0]['medspa']['id'] == str(medspa.id)
     assert data[0]['medspa']['name'] == medspa.name
 
-    response = graphql_query(
+    content = execute_graphql_query(
+        client,
         '''
         query getAppointmentsByMedspa($medspaId: UUID!, $date: Date) {
             appointmentsByMedspa(medspaId: $medspaId, date: $date) {
@@ -299,17 +201,13 @@ def test_query_appointments_by_medspa(client):
             }
         }
         ''',
-        client=client,
-        graphql_url="/graphql/",
         variables={
             'medspaId': str(medspa.id),
             'date': timezone.now().date().isoformat()
         }
     )
 
-    content = response.json()
     data = content['data']['appointmentsByMedspa']
-
     assert len(data) == 1
     assert data[0]['medspa']['id'] == str(medspa.id)
     assert data[0]['medspa']['name'] == medspa.name
