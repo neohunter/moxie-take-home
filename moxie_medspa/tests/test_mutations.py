@@ -1,11 +1,39 @@
 import pytest
 from graphene_django.utils.testing import graphql_query
-from moxie_medspa.models import Appointment, Medspa, Service
+from moxie_medspa.models import Medspa, Service, Appointment
 from django.utils import timezone
+
+def create_medspa():
+    return Medspa.objects.create(
+        name="Test Medspa",
+        address="123 Test St",
+        phone_number="555-1234",
+        email_address="test@joinmoxie.com"
+    )
+
+def create_service(medspa, name="Test Service", description="Test Service Description", price=100.0, duration=60):
+    return Service.objects.create(
+        name=name,
+        description=description,
+        price=price,
+        duration=duration,
+        medspa=medspa
+    )
+
+def create_appointment(medspa, services, start_time=None, status='scheduled'):
+    appointment = Appointment.objects.create(
+        start_time=start_time or timezone.now(),
+        total_duration=sum(service.duration for service in services),
+        total_price=sum(service.price for service in services),
+        status=status,
+        medspa=medspa
+    )
+    appointment.services.set(services)
+    return appointment
 
 @pytest.mark.django_db
 def test_create_service_mutation(client):
-    medspa = Medspa.objects.create(name="Test Medspa", address="123 Test St", phone_number="555-1234", email_address="test@joinmoxie.com")
+    medspa = create_medspa()
 
     response = graphql_query(
         '''
@@ -49,26 +77,9 @@ def test_create_service_mutation(client):
 
 @pytest.mark.django_db
 def test_create_appointment_mutation(client):
-    medspa = Medspa.objects.create(
-        name="Test Medspa",
-        address="123 Test St",
-        phone_number="555-1234",
-        email_address="test@joinmoxie.com"
-    )
-    service1 = Service.objects.create(
-        name="Service A",
-        description="Service A Description",
-        price=100.0,
-        duration=30,
-        medspa=medspa
-    )
-    service2 = Service.objects.create(
-        name="Service B",
-        description="Service B Description",
-        price=150.0,
-        duration=45,
-        medspa=medspa
-    )
+    medspa = create_medspa()
+    service1 = create_service(medspa, name="Service A", price=100.0, duration=30)
+    service2 = create_service(medspa, name="Service B", price=150.0, duration=45)
 
     response = graphql_query(
         '''
@@ -125,19 +136,8 @@ def test_create_appointment_mutation(client):
 
 @pytest.mark.django_db
 def test_update_service_mutation(client):
-    medspa = Medspa.objects.create(
-        name="Test Medspa",
-        address="123 Test St",
-        phone_number="555-1234",
-        email_address="test@joinmoxie.com"
-    )
-    service = Service.objects.create(
-        name="Old Service Name",
-        description="Old Service Description",
-        price=100.0,
-        duration=60,
-        medspa=medspa
-    )
+    medspa = create_medspa()
+    service = create_service(medspa, name="Old Service Name", description="Old Service Description", price=100.0, duration=60)
 
     response = graphql_query(
         '''
@@ -190,34 +190,11 @@ def test_update_service_mutation(client):
     assert service.price == 200.0
     assert service.duration == 90
 
-import pytest
-from graphene_django.utils.testing import graphql_query
-from moxie_medspa.models import Medspa, Service, Appointment
-from django.utils import timezone
-
 @pytest.mark.django_db
 def test_update_appointment_status_mutation(client):
-    medspa = Medspa.objects.create(
-        name="Test Medspa",
-        address="123 Test St",
-        phone_number="555-1234",
-        email_address="test@joinmoxie.com"
-    )
-    service = Service.objects.create(
-        name="Test Service",
-        description="Test Service Description",
-        price=100.0,
-        duration=60,
-        medspa=medspa
-    )
-    appointment = Appointment.objects.create(
-        start_time=timezone.now(),
-        total_duration=service.duration,
-        total_price=service.price,
-        status='scheduled',
-        medspa=medspa
-    )
-    appointment.services.add(service)
+    medspa = create_medspa()
+    service = create_service(medspa)
+    appointment = create_appointment(medspa, [service])
 
     response = graphql_query(
         '''
