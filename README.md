@@ -78,6 +78,9 @@ From here, you can run queries and mutations to interact with the API. For examp
 
 Here you can find some references for the implemented queries and mutations.
 
+<img width="1168" alt="image" src="https://github.com/user-attachments/assets/e05356f7-4559-4729-90a4-e04b77a0d59a">
+
+
 ```graphql
 # List all Medspas
 # ---------------------------
