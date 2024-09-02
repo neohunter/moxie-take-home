@@ -1,7 +1,7 @@
 # moxie-take-home
 Moxie Take home assesment for Arnold M. Roa
 
-Dear Technical Recruiter, (Ryan, is that you? 👋)
+Dear Technical Recruiter, (Roge, Ryan, Pjey is that you? 👋)
 
 I sincerely appreciate you taking the time to review this project, which has been completed
 as part of the take-home assessment for the Lead Backend Engineer Python position.
