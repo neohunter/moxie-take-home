@@ -1,0 +1,6 @@
+Django>=5.1
+djangorestframework
+graphene-django
+psycopg2-binary
+pytest
+pytest-django
