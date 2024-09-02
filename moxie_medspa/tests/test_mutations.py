@@ -122,3 +122,71 @@ def test_create_appointment_mutation(client):
     assert appointment.total_duration == service1.duration + service2.duration
     assert appointment.total_price == service1.price + service2.price
     assert appointment.services.count() == 2
+
+@pytest.mark.django_db
+def test_update_service_mutation(client):
+    medspa = Medspa.objects.create(
+        name="Test Medspa",
+        address="123 Test St",
+        phone_number="555-1234",
+        email_address="test@joinmoxie.com"
+    )
+    service = Service.objects.create(
+        name="Old Service Name",
+        description="Old Service Description",
+        price=100.0,
+        duration=60,
+        medspa=medspa
+    )
+
+    # Perform the mutation
+    response = graphql_query(
+        '''
+        mutation updateService(
+          $serviceId: UUID!,
+          $name: String,
+          $description: String,
+          $price: Decimal,
+          $duration: Int
+        ) {
+          updateService(
+            serviceId: $serviceId,
+            name: $name,
+            description: $description,
+            price: $price,
+            duration: $duration
+          ) {
+            service {
+              id
+              name
+              description
+              price
+              duration
+            }
+          }
+        }
+        ''',
+        client=client,
+        graphql_url="/graphql/",
+        variables={
+            'serviceId': str(service.id),
+            'name': "Updated Service Name",
+            'description': "Updated Service Description",
+            'price': 200.0,
+            'duration': 90
+        }
+    )
+
+    content = response.json()
+    data = content['data']['updateService']['service']
+
+    assert data['name'] == "Updated Service Name"
+    assert data['description'] == "Updated Service Description"
+    assert float(data['price']) == 200.0
+    assert data['duration'] == 90
+
+    service.refresh_from_db()
+    assert service.name == "Updated Service Name"
+    assert service.description == "Updated Service Description"
+    assert service.price == 200.0
+    assert service.duration == 90

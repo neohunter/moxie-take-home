@@ -103,8 +103,61 @@ class CreateAppointment(graphene.Mutation):
 
         return CreateAppointment(appointment=appointment)
 
+class UpdateService(graphene.Mutation):
+    service = graphene.Field(ServiceType)
+
+    class Arguments:
+        service_id = graphene.UUID(required=True)
+        name = graphene.String(required=False)
+        description = graphene.String(required=False)
+        price = graphene.Decimal(required=False)
+        duration = graphene.Int(required=False)
+
+    def mutate(self, info, service_id, name=None, description=None, price=None, duration=None):
+        try:
+            service = Service.objects.get(id=service_id)
+        except Service.DoesNotExist:
+            raise Exception('Service not found')
+
+        if name:
+            service.name = name
+        if description:
+            service.description = description
+        if price:
+            service.price = price
+        if duration:
+            service.duration = duration
+
+        service.save()
+        return UpdateService(service=service)
+
+class UpdateAppointmentStatus(graphene.Mutation):
+    appointment = graphene.Field(AppointmentType)
+
+    class Arguments:
+        appointment_id = graphene.UUID(required=True)
+        status = graphene.String(required=True)
+
+    def mutate(self, info, appointment_id, status):
+        try:
+            appointment = Appointment.objects.get(id=appointment_id)
+        except Appointment.DoesNotExist:
+            raise Exception('Appointment not found')
+
+        valid_statuses = ['scheduled', 'completed', 'canceled']
+        if status not in valid_statuses:
+            raise Exception(f"Invalid status. Expected one of {valid_statuses}")
+
+        appointment.status = status
+        appointment.save()
+
+        return UpdateAppointmentStatus(appointment=appointment)
+
 class Mutation(graphene.ObjectType):
     create_service = CreateService.Field()
+    update_service = UpdateService.Field()
     create_appointment = CreateAppointment.Field()
+    update_appointment_status = UpdateAppointmentStatus.Field()
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
+

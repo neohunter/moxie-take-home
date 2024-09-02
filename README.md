@@ -212,6 +212,43 @@ mutation createAppointment(
     }
   }
 }
+
+# Update a service
+# ------------------------------------------
+# variables:
+  {
+    "serviceId": "aec71f83-346d-4e73-9d27-72ca00c3ff78",
+    "name": "Updated Service Name",
+    "description": "Updated Service Description",
+    "price": 250.0,
+    "duration": 90
+  }
+
+
+mutation updateService(
+  $serviceId: UUID!,
+  $name: String,
+  $description: String,
+  $price: Decimal,
+  $duration: Int
+) {
+  updateService(
+    serviceId: $serviceId,
+    name: $name,
+    description: $description,
+    price: $price,
+    duration: $duration
+  ) {
+    service {
+      id
+      name
+      description
+      price
+      duration
+    }
+  }
+}
+
 ```
 
 # Run tests
