@@ -1,7 +1,7 @@
 # moxie-take-home
 Moxie Take home assesment for Arnold M. Roa
 
-Dear Technical Recruiter,
+Dear Technical Recruiter, (Ryan, is that you? 👋)
 
 I sincerely appreciate you taking the time to review this project, which has been completed
 as part of the take-home assessment for the Lead Backend Engineer Python position.
@@ -33,7 +33,7 @@ Sincerely yous,
 
 Arnold M. Roa
 
-Being said that, lets dive in!
+Being said that, let's dive in! 🌊
 
 # Moxie Medspa API
 
@@ -224,5 +224,6 @@ $ docker-compose run web pytest
 - [X] Endpoints to get Medspa, services, and all appointments
 - [X] Endpoint to get all appointments by medSpa, filtering by date
 - [X] Write tests
-- [] Auth
-- [] Validate that the services passed in createApointment belongs to the medSpa
+- [ ] Implement where customers will be stored.
+- [ ] Implement Authentication
+- [ ] Validate that the services passed in createApointment belongs to the medSpa
