@@ -139,7 +139,6 @@ def test_update_service_mutation(client):
         medspa=medspa
     )
 
-    # Perform the mutation
     response = graphql_query(
         '''
         mutation updateService(
@@ -190,3 +189,65 @@ def test_update_service_mutation(client):
     assert service.description == "Updated Service Description"
     assert service.price == 200.0
     assert service.duration == 90
+
+import pytest
+from graphene_django.utils.testing import graphql_query
+from moxie_medspa.models import Medspa, Service, Appointment
+from django.utils import timezone
+
+@pytest.mark.django_db
+def test_update_appointment_status_mutation(client):
+    medspa = Medspa.objects.create(
+        name="Test Medspa",
+        address="123 Test St",
+        phone_number="555-1234",
+        email_address="test@joinmoxie.com"
+    )
+    service = Service.objects.create(
+        name="Test Service",
+        description="Test Service Description",
+        price=100.0,
+        duration=60,
+        medspa=medspa
+    )
+    appointment = Appointment.objects.create(
+        start_time=timezone.now(),
+        total_duration=service.duration,
+        total_price=service.price,
+        status='scheduled',
+        medspa=medspa
+    )
+    appointment.services.add(service)
+
+    response = graphql_query(
+        '''
+        mutation updateAppointmentStatus($appointmentId: UUID!, $status: String!) {
+          updateAppointmentStatus(appointmentId: $appointmentId, status: $status) {
+            appointment {
+              id
+              status
+            }
+          }
+        }
+        ''',
+        client=client,
+        graphql_url="/graphql/",
+        variables={
+            'appointmentId': str(appointment.id),
+            'status': "completed"
+        }
+    )
+
+    content = response.json()
+
+    if 'errors' in content:
+        print("Errors:", content['errors'])
+
+    assert 'data' in content, f"Response had no data: {content}"
+
+    data = content['data']['updateAppointmentStatus']['appointment']
+
+    assert data['status'] == "COMPLETED"
+
+    appointment.refresh_from_db()
+    assert appointment.status == "completed"

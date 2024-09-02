@@ -149,6 +149,29 @@ query getAppointmentsByMedspa($medspaId: UUID!, $date: Date) {
   }
 }
 
+# List all appointments by status
+# --------------------------------
+  {"status": "scheduled"}
+
+query getAppointmentsByStatus($status: String!) {
+  allAppointments(status: $status) {
+    id
+    status
+    startTime
+    totalDuration
+    totalPrice
+    medspa {
+      id
+      name
+    }
+    services {
+      id
+      name
+    }
+  }
+}
+
+
 # Create a new Service
 # -------------------------------
 
@@ -248,6 +271,34 @@ mutation updateService(
     }
   }
 }
+
+# Update Appointment's Status
+# --------------------------------
+  {
+    "appointmentId": "aec71f83-346d-4e73-9d27-72ca00c3ff78",
+    "status": "completed"
+  }
+
+mutation updateAppointmentStatus($appointmentId: UUID!, $status: String!) {
+  updateAppointmentStatus(appointmentId: $appointmentId, status: $status) {
+    appointment {
+      id
+      status
+      startTime
+      totalDuration
+      totalPrice
+      medspa {
+        id
+        name
+      }
+      services {
+        id
+        name
+      }
+    }
+  }
+}
+
 
 ```
 
